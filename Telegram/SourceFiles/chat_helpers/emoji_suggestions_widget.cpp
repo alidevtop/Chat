@@ -22,6 +22,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "platform/platform_specific.h"
 #include "core/application.h"
 #include "base/event_filter.h"
+#include "base/integration.h"
 #include "main/main_session.h"
 #include "data/data_session.h"
 #include "data/data_document.h"
@@ -704,12 +705,12 @@ void SuggestionsWidget::enterEventHook(QEnterEvent *e) {
 	if (!inner().contains(mapToInner(QCursor::pos()))) {
 		clearMouseSelection();
 	}
-	return TWidget::enterEventHook(e);
+	return RpWidget::enterEventHook(e);
 }
 
 void SuggestionsWidget::leaveEventHook(QEvent *e) {
 	clearMouseSelection();
-	return TWidget::leaveEventHook(e);
+	return RpWidget::leaveEventHook(e);
 }
 
 SuggestionsController::SuggestionsController(
@@ -750,11 +751,11 @@ SuggestionsController::SuggestionsController(
 	};
 	_outerFilter.reset(base::install_event_filter(outer, outerCallback));
 
-	QObject::connect(
-		_field,
-		&QTextEdit::textChanged,
-		_container,
-		[=] { handleTextChange(); });
+	QObject::connect(_field, &QTextEdit::textChanged, _container, [=] {
+		base::Integration::Instance().enterFromEventLoop([&] {
+			handleTextChange();
+		});
+	});
 	QObject::connect(
 		_field,
 		&QTextEdit::cursorPositionChanged,
@@ -984,7 +985,7 @@ void SuggestionsController::replaceCurrent(
 	const auto position = cursor.position();
 	const auto suggestion = getEmojiQuery();
 	if (v::is<EmojiPtr>(suggestion)) {
-		const auto weak = Ui::MakeWeak(_container.get());
+		const auto weak = base::make_weak(_container.get());
 		const auto count = std::max(_emojiQueryLength, 1);
 		for (auto i = 0; i != count; ++i) {
 			const auto start = position - count + i;

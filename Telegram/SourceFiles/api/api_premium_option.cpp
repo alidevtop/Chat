@@ -25,6 +25,7 @@ Data::PremiumSubscriptionOption CreateSubscriptionOption(
 			* kDiscountDivider;
 	}();
 	return {
+		.months = months,
 		.duration = Ui::FormatTTL(months * 86400 * 31),
 		.discount = (discount > 0)
 			? QString::fromUtf8("\xe2\x88\x92%1%").arg(discount)
@@ -32,7 +33,12 @@ Data::PremiumSubscriptionOption CreateSubscriptionOption(
 		.costPerMonth = Ui::FillAmountAndCurrency(
 			amount / float64(months),
 			currency),
-		.costTotal = Ui::FillAmountAndCurrency(amount, currency),
+		.costNoDiscount = Ui::FillAmountAndCurrency(
+			monthlyAmount * months,
+			currency),
+		.costPerYear = Ui::FillAmountAndCurrency(
+			amount / float64(months / 12.),
+			currency),
 		.botUrl = botUrl,
 	};
 }

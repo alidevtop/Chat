@@ -34,6 +34,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "window/notifications_manager.h"
 #include "storage/localimageloader.h"
 #include "data/data_document_resolver.h"
+#include "info/info_flexible_scroll.h"
 #include "styles/style_settings.h"
 #include "styles/style_layers.h"
 
@@ -147,12 +148,15 @@ void SetupExperimental(
 	addToggle(Core::kOptionFractionalScalingEnabled);
 	addToggle(Window::kOptionViewProfileInChatsListContextMenu);
 	addToggle(Info::Profile::kOptionShowPeerIdBelowAbout);
+	addToggle(Info::Profile::kOptionShowChannelJoinedBelowAbout);
 	addToggle(Ui::kOptionUseSmallMsgBubbleRadius);
 	addToggle(Media::Player::kOptionDisableAutoplayNext);
 	addToggle(kOptionSendLargePhotos);
 	addToggle(Webview::kOptionWebviewDebugEnabled);
 	addToggle(Webview::kOptionWebviewLegacyEdge);
 	addToggle(kOptionAutoScrollInactiveChat);
+	addToggle(Window::Notifications::kOptionHideReplyButton);
+	addToggle(Window::Notifications::kOptionCustomNotification);
 	addToggle(Window::Notifications::kOptionGNotification);
 	addToggle(Core::kOptionFreeType);
 	addToggle(Core::kOptionSkipUrlSchemeRegister);
@@ -163,6 +167,7 @@ void SetupExperimental(
 		addToggle(kOptionFastButtonsMode);
 	}
 	addToggle(Window::kOptionDisableTouchbar);
+	addToggle(Info::kAlternativeScrollProcessing);
 }
 
 } // namespace

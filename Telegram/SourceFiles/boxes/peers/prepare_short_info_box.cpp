@@ -210,7 +210,8 @@ void ProcessFullPhoto(
 			| UpdateFlag::PhoneNumber
 			| UpdateFlag::Username
 			| UpdateFlag::About
-			| UpdateFlag::Birthday)
+			| UpdateFlag::Birthday
+			| UpdateFlag::ContactNote)
 	) | rpl::map([=] {
 		const auto user = peer->asUser();
 		const auto username = peer->username();
@@ -237,6 +238,7 @@ void ProcessFullPhoto(
 				? ('@' + username)
 				: QString()),
 			.birthday = user ? user->birthday() : Data::Birthday(),
+			.note = user ? user->note() : TextWithEntities(),
 			.isBio = (user && !user->isBot()),
 		};
 	});
@@ -361,7 +363,7 @@ bool ProcessCurrent(
 			&& peer->asUser()->hasPersonalPhoto())
 		? tr::lng_profile_photo_by_you(tr::now)
 		: ((state->current.index == (state->current.count - 1))
-			&& SyncUserFallbackPhotoViewer(peer->asUser()))
+			&& SyncUserFallbackPhotoViewer(peer->asUser()) == state->photoId)
 		? tr::lng_profile_public_photo(tr::now)
 		: QString();
 	state->waitingLoad = false;

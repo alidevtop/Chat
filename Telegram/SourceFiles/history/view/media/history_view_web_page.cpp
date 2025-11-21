@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/media/history_view_web_page.h"
 
+#include "base/unixtime.h"
 #include "core/application.h"
 #include "countries/countries_instance.h"
 #include "base/qt/qt_key_modifiers.h"
@@ -220,6 +221,8 @@ constexpr auto kSponsoredUserpicLines = 2;
 		? tr::lng_view_button_voice_chat(tr::now)
 		: (type == WebPageType::Livestream)
 		? tr::lng_view_button_voice_chat_channel(tr::now)
+		: (type == WebPageType::ConferenceCall)
+		? tr::lng_view_button_call(tr::now)
 		: (type == WebPageType::Bot)
 		? tr::lng_view_button_bot(tr::now)
 		: (type == WebPageType::User)
@@ -230,14 +233,18 @@ constexpr auto kSponsoredUserpicLines = 2;
 		? tr::lng_view_button_emojipack(tr::now)
 		: (type == WebPageType::StickerSet)
 		? tr::lng_view_button_stickerset(tr::now)
+		: (type == WebPageType::StoryAlbum)
+		? tr::lng_view_button_storyalbum(tr::now)
+		: (type == WebPageType::GiftCollection)
+		? tr::lng_view_button_collection(tr::now)
+		: (type == WebPageType::Auction)
+		? (page->auction && page->auction->endDate
+			&& page->auction->endDate <= base::unixtime::now())
+			? tr::lng_auction_preview_view_results(tr::now)
+			: tr::lng_auction_preview_join(tr::now)
 		: QString());
 	if (page->iv) {
-		const auto manager = &page->owner().customEmojiManager();
-		const auto &icon = st::historyIvIcon;
-		const auto padding = st::historyIvIconPadding;
-		return Ui::Text::SingleCustomEmoji(
-			manager->registerInternalEmoji(icon, padding)
-		).append(text);
+		return Ui::Text::IconEmoji(&st::historyIvIcon).append(text);
 	}
 	return { text };
 }
@@ -258,6 +265,7 @@ constexpr auto kSponsoredUserpicLines = 2;
 		|| (type == WebPageType::User)
 		|| (type == WebPageType::VoiceChat)
 		|| (type == WebPageType::Livestream)
+		|| (type == WebPageType::ConferenceCall)
 		|| (type == WebPageType::BotApp)
 		|| ((type == WebPageType::Theme)
 			&& webpage->document
@@ -267,7 +275,10 @@ constexpr auto kSponsoredUserpicLines = 2;
 		|| ((type == WebPageType::WallPaper)
 			&& webpage->document
 			&& webpage->document->isWallPaper())
-		|| (type == WebPageType::StickerSet);
+		|| (type == WebPageType::StickerSet)
+		|| (type == WebPageType::StoryAlbum)
+		|| (type == WebPageType::GiftCollection)
+		|| (type == WebPageType::Auction);
 }
 
 } // namespace
@@ -282,9 +293,9 @@ WebPage::WebPage(
 	: st::historyPagePreview)
 , _data(data)
 , _flags(flags)
-, _siteName(st::msgMinWidth - _st.padding.left() - _st.padding.right())
-, _title(st::msgMinWidth - _st.padding.left() - _st.padding.right())
-, _description(st::msgMinWidth - _st.padding.left() - _st.padding.right()) {
+, _siteName(st::minPhotoSize - rect::m::sum::h(_st.padding))
+, _title(st::minPhotoSize - rect::m::sum::h(_st.padding))
+, _description(st::minPhotoSize - rect::m::sum::h(_st.padding)) {
 	history()->owner().registerWebPageView(_data, _parent);
 }
 
@@ -402,7 +413,7 @@ QSize WebPage::countOptimalSize() {
 		_attach = nullptr;
 		const auto item = _parent->data();
 		_collage = PrepareCollageMedia(item, _data->collage);
-		const auto min = st::msgMinWidth - rect::m::sum::h(_st.padding);
+		const auto min = st::minPhotoSize - rect::m::sum::h(_st.padding);
 		_siteName = Ui::Text::String(min);
 		_title = Ui::Text::String(min);
 		_description = Ui::Text::String(min);
@@ -513,8 +524,36 @@ QSize WebPage::countOptimalSize() {
 				_data->uniqueGift),
 				MediaGenericDescriptor{
 					.maxWidth = st::msgServiceGiftPreview,
-					.paintBg = UniqueGiftBg(_parent, _data->uniqueGift),
+					.paintBgFactory = [=] {
+						return UniqueGiftBg(_parent, _data->uniqueGift);
+					},
 				});
+	} else if (!_attach && _data->auction) {
+		const auto &gift = _data->auction->auctionGift;
+		const auto backdrop = Data::UniqueGiftBackdrop{
+			.centerColor = _data->auction->centerColor,
+			.edgeColor = _data->auction->edgeColor,
+			.patternColor = _data->auction->edgeColor,
+			.textColor = _data->auction->textColor,
+		};
+		_attach = std::make_unique<MediaGeneric>(
+			_parent,
+			GenerateAuctionPreview(
+				_parent,
+				nullptr,
+				gift,
+				backdrop,
+				_data->auction->endDate),
+			MediaGenericDescriptor{
+				.maxWidth = st::msgServiceGiftPreview,
+				.paintBgFactory = [=] {
+					return AuctionBg(
+						_parent,
+						backdrop,
+						gift,
+						_data->auction->endDate);
+				},
+			});
 	} else if (!_attach && !_asArticle) {
 		_attach = CreateAttach(
 			_parent,
@@ -529,15 +568,9 @@ QSize WebPage::countOptimalSize() {
 	// init strings
 	if (_description.isEmpty()
 		&& !_data->description.text.isEmpty()
-		&& !_data->uniqueGift) {
+		&& !_data->uniqueGift
+		&& !_data->auction) {
 		const auto &text = _data->description;
-
-		if (isLogEntryOriginal()) {
-			// Fix layout for small bubbles
-			// (narrow media caption edit log entries).
-			_description = Ui::Text::String(st::minPhotoSize
-				- rect::m::sum::h(padding));
-		}
 		using Type = Core::TextContextDetails::HashtagMentionType;
 		auto context = Core::TextContext({
 			.session = &history()->session(),
@@ -898,45 +931,60 @@ void WebPage::draw(Painter &p, const PaintContext &context) const {
 
 	const auto selected = context.selected();
 	const auto view = parent();
-	const auto from = view->data()->contentColorsFrom();
 	const auto colorIndex = factcheck
 		? 0 // red
 		: (sponsored && sponsored->colorIndex)
 		? sponsored->colorIndex
-		: from
-		? from->colorIndex()
-		: view->colorIndex();
-	const auto cache = context.outbg
-		? stm->replyCache[st->colorPatternIndex(colorIndex)].get()
-		: st->coloredReplyCache(selected, colorIndex).get();
+		: view->contentColorIndex();
+	const auto &colorCollectible = factcheck
+		? nullptr
+		: (sponsored && sponsored->colorIndex)
+		? nullptr
+		: view->contentColorCollectible();
+	const auto colorPattern = colorCollectible
+		? st->collectiblePatternIndex(colorCollectible)
+		: st->colorPatternIndex(colorIndex);
+	const auto useColorCollectible = colorCollectible && !context.outbg;
+	const auto useColorIndex = !context.outbg;
+	const auto cache = useColorCollectible
+		? st->collectibleReplyCache(selected, colorCollectible).get()
+		: useColorIndex
+		? st->coloredReplyCache(selected, colorIndex).get()
+		: stm->replyCache[colorPattern].get();
 	const auto backgroundEmojiId = factcheck
 		? DocumentId()
 		: (sponsored && sponsored->backgroundEmojiId)
 		? sponsored->backgroundEmojiId
-		: from
-		? from->backgroundEmojiId()
-		: DocumentId();
-	const auto backgroundEmoji = backgroundEmojiId
-		? st->backgroundEmojiData(backgroundEmojiId).get()
+		: view->contentBackgroundEmojiId();
+	const auto backgroundEmojiData = backgroundEmojiId
+		? st->backgroundEmojiData(backgroundEmojiId, colorCollectible).get()
 		: nullptr;
-	const auto backgroundEmojiCache = backgroundEmoji
-		? &backgroundEmoji->caches[Ui::BackgroundEmojiData::CacheIndex(
+	const auto backgroundEmojiCache = !backgroundEmojiData
+		? nullptr
+		: useColorCollectible
+		? &backgroundEmojiData->collectibleCaches[colorCollectible]
+		: &backgroundEmojiData->caches[Ui::BackgroundEmojiData::CacheIndex(
 			selected,
 			context.outbg,
 			true,
-			colorIndex + 1)]
-		: nullptr;
+			useColorIndex ? (colorIndex + 1) : 0)];
 	Ui::Text::ValidateQuotePaintCache(*cache, _st);
 	Ui::Text::FillQuotePaint(p, outer, *cache, _st);
-	if (backgroundEmoji) {
+	if (backgroundEmojiData) {
 		ValidateBackgroundEmoji(
 			backgroundEmojiId,
-			backgroundEmoji,
+			colorCollectible,
+			backgroundEmojiData,
 			backgroundEmojiCache,
 			cache,
 			view);
 		if (!backgroundEmojiCache->frames[0].isNull()) {
-			FillBackgroundEmoji(p, outer, false, *backgroundEmojiCache);
+			FillBackgroundEmoji(
+				p,
+				outer,
+				false,
+				*backgroundEmojiCache,
+				backgroundEmojiData->firstGiftFrame);
 		}
 	} else if (factcheck && factcheck->expandable) {
 		const auto &icon = factcheck->expanded ? _st.collapse : _st.expand;
@@ -1033,9 +1081,11 @@ void WebPage::draw(Painter &p, const PaintContext &context) const {
 	}
 	if (_siteNameLines) {
 		p.setPen(cache->icon);
-		p.setTextPalette(context.outbg
-			? stm->semiboldPalette
-			: st->coloredTextPalette(selected, colorIndex));
+		p.setTextPalette(useColorCollectible
+			? st->collectibleTextPalette(selected, colorCollectible)
+			: useColorIndex
+			? st->coloredTextPalette(selected, colorIndex)
+			: stm->semiboldPalette);
 
 		const auto endskip = _siteName.hasSkipBlock()
 			? _parent->skipBlockWidth()

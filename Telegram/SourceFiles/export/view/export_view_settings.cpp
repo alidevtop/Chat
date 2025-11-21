@@ -183,6 +183,11 @@ void SettingsWidget::setupFullExportOptions(
 		tr::lng_export_option_stories(tr::now),
 		Type::Stories,
 		tr::lng_export_option_stories_about(tr::now));
+	addOptionWithAbout(
+		container,
+		tr::lng_export_option_profile_music(tr::now),
+		Type::ProfileMusic,
+		tr::lng_export_option_profile_music_about(tr::now));
 	addHeader(container, tr::lng_export_header_chats(tr::now));
 	addOption(
 		container,
@@ -233,7 +238,8 @@ void SettingsWidget::setupMediaOptions(
 			| Type::PrivateGroups
 			| Type::PrivateChannels
 			| Type::PublicGroups
-			| Type::PublicChannels)) != 0, anim::type::normal);
+			| Type::PublicChannels
+			| Type::ProfileMusic)) != 0, anim::type::normal);
 	}, mediaWrap->lifetime());
 
 	widthValue(
@@ -320,20 +326,20 @@ void SettingsWidget::addLocationLabel(
 }
 
 void SettingsWidget::chooseFormat() {
-	const auto shared = std::make_shared<QPointer<Ui::GenericBox>>();
+	const auto shared = std::make_shared<base::weak_qptr<Ui::GenericBox>>();
 	const auto callback = [=](Format format) {
 		changeData([&](Settings &data) {
 			data.format = format;
 		});
-		if (const auto weak = shared->data()) {
-			weak->closeBox();
+		if (const auto strong = shared->get()) {
+			strong->closeBox();
 		}
 	};
 	auto box = Box(
 		ChooseFormatBox,
 		readData().format,
 		callback);
-	*shared = Ui::MakeWeak(box.data());
+	*shared = base::make_weak(box.data());
 	_showBoxCallback(std::move(box));
 }
 
@@ -602,18 +608,18 @@ void SettingsWidget::editDateLimit(
 		? base::unixtime::parse(min).date()
 		: QDate::currentDate();
 	const auto month = highlighted;
-	const auto shared = std::make_shared<QPointer<Ui::CalendarBox>>();
+	const auto shared = std::make_shared<base::weak_qptr<Ui::CalendarBox>>();
 	const auto finalize = [=](not_null<Ui::CalendarBox*> box) {
 		box->addLeftButton(std::move(resetLabel), crl::guard(this, [=] {
 			done(0);
-			if (const auto weak = shared->data()) {
+			if (const auto weak = shared->get()) {
 				weak->closeBox();
 			}
 		}));
 	};
 	const auto callback = crl::guard(this, [=](const QDate &date) {
 		done(base::unixtime::serialize(date.startOfDay()));
-		if (const auto weak = shared->data()) {
+		if (const auto weak = shared->get()) {
 			weak->closeBox();
 		}
 	});
@@ -630,7 +636,7 @@ void SettingsWidget::editDateLimit(
 			? base::unixtime::parse(max).date()
 			: QDate::currentDate()),
 	});
-	*shared = Ui::MakeWeak(box.data());
+	*shared = base::make_weak(box.data());
 	_showBoxCallback(std::move(box));
 }
 

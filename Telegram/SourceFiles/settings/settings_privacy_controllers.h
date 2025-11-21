@@ -317,7 +317,7 @@ public:
 
 };
 
-class BirthdayPrivacyController final : public EditPrivacyController {
+class BirthdayPrivacyController : public EditPrivacyController {
 public:
 	using Option = EditPrivacyBox::Option;
 	using Exception = EditPrivacyBox::Exception;
@@ -376,6 +376,23 @@ private:
 		rpl::lifetime &on);
 
 	AdditionalState *_state = nullptr;
+
+};
+
+class SavedMusicPrivacyController final : public EditPrivacyController {
+public:
+	using Option = EditPrivacyBox::Option;
+	using Exception = EditPrivacyBox::Exception;
+
+	Key key() const override;
+
+	rpl::producer<QString> title() const override;
+	rpl::producer<QString> optionsTitleKey() const override;
+	rpl::producer<QString> exceptionButtonTextKey(
+		Exception exception) const override;
+	rpl::producer<QString> exceptionBoxTitle(
+		Exception exception) const override;
+	rpl::producer<QString> exceptionsDescription() const override;
 
 };
 

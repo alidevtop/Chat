@@ -501,7 +501,8 @@ void TopBar::adjustColors(const std::optional<QColor> &edgeColor) {
 	};
 	const auto collectible = effectiveCollectible();
 	const auto shouldOverrideTitle = shouldOverride(_title->st().textFg);
-	const auto shouldOverrideStatus = shouldOverrideTitle; // shouldOverride(_status->st().textFg);
+	const auto shouldOverrideStatus = shouldOverrideTitle
+		|| shouldOverride(_status->st().textFg);
 	_title->setTextColorOverride(collectible
 		? collectible->textColor
 		: shouldOverrideTitle
@@ -1114,8 +1115,8 @@ void TopBar::setupUserpicButton(
 			.about = (*phrase)(
 				tr::now,
 				lt_user,
-				Ui::Text::Bold(name),
-				Ui::Text::WithEntities),
+				tr::bold(name),
+				tr::marked),
 			.confirm = ((type == ChosenType::Suggest)
 				? tr::lng_profile_suggest_button(tr::now)
 				: tr::lng_profile_set_photo_button(tr::now)),
@@ -1261,8 +1262,8 @@ void TopBar::setupUserpicButton(
 						const auto text = tr::lng_profile_topic_toast(
 							tr::now,
 							lt_name,
-							Ui::Text::Link(packName, u"internal:"_q),
-							Ui::Text::WithEntities);
+							tr::link(packName, u"internal:"_q),
+							tr::marked);
 						const auto weak = base::make_weak(controller);
 						controller->showToast(Ui::Toast::Config{
 							.text = text,

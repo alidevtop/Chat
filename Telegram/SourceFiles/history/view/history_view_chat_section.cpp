@@ -463,9 +463,6 @@ ChatWidget::ChatWidget(
 
 ChatWidget::~ChatWidget() {
 	base::take(_sendAction);
-	if (_repliesRootId || _sublist) {
-		session().api().saveCurrentDraftToCloud();
-	}
 	if (_repliesRootId) {
 		controller()->sendingAnimation().clear();
 	}
@@ -475,6 +472,9 @@ ChatWidget::~ChatWidget() {
 	}
 	if (_topic) {
 		if (_topic->creating()) {
+			if (controller()->activeChatCurrent().topic() == _topic) {
+				controller()->setActiveChatEntry(Dialogs::Key());
+			}
 			_emptyPainter = nullptr;
 			_topic->discard();
 			_topic = nullptr;

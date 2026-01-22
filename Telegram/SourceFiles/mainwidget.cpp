@@ -429,7 +429,11 @@ MainWidget::MainWidget(
 	session().data().stickers().notifySavedGifsUpdated();
 }
 
-MainWidget::~MainWidget() = default;
+MainWidget::~MainWidget() {
+	if (_controller->activeChatCurrent()) {
+		session().api().saveCurrentDraftToCloud();
+	}
+}
 
 Main::Session &MainWidget::session() const {
 	return _controller->session();
@@ -1407,18 +1411,21 @@ void MainWidget::showHistory(
 		}
 		_stack.clear();
 	} else {
-		for (auto i = 0, s = int(_stack.size()); i < s; ++i) {
-			if (_stack.at(i)->type() == HistoryStackItem && _stack.at(i)->peer()->id == peerId) {
-				foundInStack = true;
-				while (int(_stack.size()) > i + 1) {
-					ClearBotStartToken(_stack.back()->peer());
+		if (!params.allowDuplicateInStack) {
+			for (auto i = 0, s = int(_stack.size()); i < s; ++i) {
+				if (_stack.at(i)->type() == HistoryStackItem
+					&& _stack.at(i)->peer()->id == peerId) {
+					foundInStack = true;
+					while (int(_stack.size()) > i + 1) {
+						ClearBotStartToken(_stack.back()->peer());
+						_stack.pop_back();
+					}
 					_stack.pop_back();
+					if (!back) {
+						back = true;
+					}
+					break;
 				}
-				_stack.pop_back();
-				if (!back) {
-					back = true;
-				}
-				break;
 			}
 		}
 		if (const auto activeChat = _controller->activeChatCurrent()) {
@@ -2892,7 +2899,7 @@ int MainWidget::backgroundFromY() const {
 
 bool MainWidget::contentOverlapped(const QRect &globalRect) {
 	return _history->contentOverlapped(globalRect)
-		|| _playerPlaylist->overlaps(globalRect);
+		/*|| _playerPlaylist->overlaps(globalRect)*/;
 }
 
 void MainWidget::activate() {

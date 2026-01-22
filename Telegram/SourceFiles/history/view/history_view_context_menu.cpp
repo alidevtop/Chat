@@ -1208,7 +1208,7 @@ void ShowWhoReadInfo(
 				}
 			};
 			session->api().request(MTPchannels_GetMessageAuthor(
-				channel->inputChannel,
+				channel->inputChannel(),
 				MTP_int(id.msg.bare)
 			)).done([=](const MTPUser &result) {
 				finishWith(session->data().processUser(result));
@@ -2006,7 +2006,7 @@ void AddEmojiPacksAction(
 		st::historyHasCustomEmojiPosition,
 		std::move(text));
 	const auto weak = base::make_weak(controller);
-	button->setClickedCallback([=] {
+	button->setActionTriggered([=] {
 		const auto strong = weak.get();
 		if (!strong) {
 			return;

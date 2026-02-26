@@ -76,7 +76,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "media/audio/media_audio_capture.h"
 #include "media/audio/media_audio.h"
 #include "menu/menu_send.h"
-#include "settings/settings_premium.h"
+#include "settings/sections/settings_premium.h"
 #include "ui/item_text_options.h"
 #include "ui/text/text_options.h"
 #include "ui/text/text_utilities.h"
@@ -1803,7 +1803,8 @@ rpl::producer<std::optional<bool>> ComposeControls::attachRequests() const {
 }
 
 void ComposeControls::setMimeDataHook(MimeDataHook hook) {
-	_field->setMimeDataHook(std::move(hook));
+	_field->setMimeDataHook(
+		WrappedMessageFieldMimeHook(std::move(hook), _field));
 }
 
 bool ComposeControls::confirmMediaEdit(Ui::PreparedList &list) {

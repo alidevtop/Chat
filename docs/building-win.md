@@ -72,4 +72,4 @@ For better debugging you may want to install Qt Visual Studio Tools:
 * Install **Qt Visual Studio Tools** extension
 
 [api_credentials]: api_credentials.md
-ok?
+ok?????

@@ -49,7 +49,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-      
+
         arch: [x64_x86, x64, arm64]
         qt: ["", qt6]
         generator: ["", "Ninja Multi-Config"]
@@ -148,7 +148,7 @@ jobs:
       - name: Libraries.
         env:
           GYP_MSVS_OVERRIDE_PATH: 'C:\Program Files\Microsoft Visual Studio\18\Enterprise\'
-          GYP_MSVS_VERSION: 2024
+          GYP_MSVS_VERSION: 2022
         run: |
           %TBUILD%\%REPO_NAME%\Telegram\build\prepare\win.bat skip-release silent ${{ matrix.qt }}
 

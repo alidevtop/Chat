@@ -64,6 +64,8 @@ jobs:
       ONLY_CACHE: "false"
       PREPARE_PATH: "Telegram/build/prepare/prepare.py"
       CL: "/D_USE_STD_VECTOR_ALGORITHMS=0"
+      MSYS2_ARG_CONV_EXCL: "*"
+      MSYS2_ENV_CONV_EXCL: "CL"
 
     defaults:
       run:

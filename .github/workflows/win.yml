@@ -63,6 +63,7 @@ jobs:
       UPLOAD_ARTIFACT: "true"
       ONLY_CACHE: "false"
       PREPARE_PATH: "Telegram/build/prepare/prepare.py"
+      CL: "/D_USE_STD_VECTOR_ALGORITHMS=0"
 
     defaults:
       run:

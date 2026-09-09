@@ -112,6 +112,21 @@ jobs:
           arch: ${{ matrix.arch }}
           sdk: ${{ env.SDK }}
 
+      - name: Detect Visual Studio installation path.
+        shell: bash
+        run: |
+          VSWHERE="/c/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe"
+          if [ -f "$VSWHERE" ]; then
+            VSPATH="$("$VSWHERE" -latest -products '*' -property installationPath)"
+            # Convert to Windows-style path with trailing backslash, as gyp expects.
+            VSPATH_WIN="$(cygpath -w "$VSPATH")\\"
+            echo "Detected Visual Studio at: $VSPATH_WIN"
+            echo "GYP_MSVS_OVERRIDE_PATH=$VSPATH_WIN" >> $GITHUB_ENV
+          else
+            echo "vswhere.exe not found, letting gyp auto-detect."
+          fi
+          echo "GYP_MSVS_VERSION=2022" >> $GITHUB_ENV
+
       - name: NuGet sources.
         run: |
           nuget sources Disable -Name "Microsoft Visual Studio Offline Packages"
@@ -149,9 +164,6 @@ jobs:
           restore-keys: ${{ runner.OS }}-${{ matrix.arch }}-${{ matrix.qt || 'qt' }}-
 
       - name: Libraries.
-        env:
-          GYP_MSVS_OVERRIDE_PATH: 'C:\Program Files\Microsoft Visual Studio\18\Enterprise\'
-          GYP_MSVS_VERSION: 2022
         run: |
           %TBUILD%\%REPO_NAME%\Telegram\build\prepare\win.bat skip-release silent ${{ matrix.qt }}
 

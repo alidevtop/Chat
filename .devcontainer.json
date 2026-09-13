@@ -1,6 +1,6 @@
 {
-    "name": "CentOS",
-    "image": "tdesktop:centos_env",
+    "name": "Debian",
+    "image": "mcr.microsoft.com/devcontainers/base:bookworm",
     "customizations": {
         "vscode": {
             "settings": {

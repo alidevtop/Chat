@@ -1785,6 +1785,7 @@ win:
         -D ADA_TESTING=OFF ^
         -D ADA_TOOLS=OFF ^
         -D ADA_INCLUDE_URL_PATTERN=OFF ^
+        -D CCACHE_FOUND=OFF ^
         -D CMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded$<$<CONFIG:Debug>:Debug>"
     cmake --build out --config Debug
     cmake --build out --config Release
@@ -1792,6 +1793,7 @@ mac:
     CFLAGS="$UNGUARDED" CPPFLAGS="$UNGUARDED" cmake -B build . \\
         -D ADA_TESTING=OFF \\
         -D ADA_TOOLS=OFF \\
+        -D CCACHE_FOUND=OFF \\
         -D CMAKE_OSX_ARCHITECTURES="x86_64;arm64" \\
         -D CMAKE_INSTALL_PREFIX:STRING=$USED_PREFIX
     cmake --build build

@@ -1109,6 +1109,8 @@ stage('liblcms2', """
 win:
 depends:python/Scripts/activate.bat
     %THIRDPARTY_DIR%\\python\\Scripts\\activate.bat
+    set "CC=cl"
+    set "CXX=cl"
     meson setup --default-library=static --buildtype=debug -Db_vscrt=mtd out/Debug
     meson compile -C out/Debug
 release:

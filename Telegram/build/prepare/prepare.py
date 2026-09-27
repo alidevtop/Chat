@@ -1844,6 +1844,7 @@ win:
     SET OPENSSL_LIBS_DIR=%OPENSSL_DIR%\\out
     SET ZLIB_LIBS_DIR=%LIBS_DIR%\\zlib
     %THIRDPARTY_DIR%\\msys64\\usr\\bin\\sed -i "s/STREQUAL/MATCHES/" td/generate/CMakeLists.txt
+    %THIRDPARTY_DIR%\\msys64\\usr\\bin\\sed -i "/RULE_LAUNCH_LINK ccache/d" CMakeLists.txt
     mkdir out
     cd out
     mkdir Debug
